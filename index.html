@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerRAG - Intelligent Resume Match & Career Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">
+                    <i data-lucide="brain-circuit" class="icon-pulse"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>CareerRAG</h1>
+                    <span>Smart HR Analytics</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" id="btn-dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#qa-console" class="nav-item" id="btn-qa-nav">
+                    <i data-lucide="message-square"></i>
+                    <span>RAG Assistant</span>
+                </a>
+                <a href="#roadmap-section" class="nav-item" id="btn-roadmap-nav">
+                    <i data-lucide="milestone"></i>
+                    <span>Roadmap</span>
+                </a>
+            </nav>
+
+            <!-- Vector Engine Status Card -->
+            <div class="system-status-container">
+                <div class="status-header">
+                    <span>AI Embedder Engine</span>
+                    <span class="status-indicator loading" id="engine-status-badge">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Loading Model...</span>
+                    </span>
+                </div>
+                <div class="model-info">
+                    <span class="info-label">Model:</span>
+                    <span class="info-value">all-MiniLM-L6-v2</span>
+                </div>
+                <div class="progress-container hidden" id="model-progress-container">
+                    <div class="progress-bar-label" id="model-progress-label">Downloading: 0%</div>
+                    <div class="progress-track">
+                        <div class="progress-bar" id="model-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Header bar -->
+            <header class="top-bar">
+                <div class="page-title">
+                    <h2>Resume Semantic Assessment</h2>
+                    <p>Compare resume with JDs, calculate vector fit, query context via RAG</p>
+                </div>
+                <div class="actions-group">
+                    <button class="btn btn-secondary" id="btn-reset">
+                        <i data-lucide="refresh-cw"></i> Reset System
+                    </button>
+                    <button class="btn btn-primary" id="btn-download-pdf" disabled>
+                        <i data-lucide="file-text"></i> Export Assessment Report
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid Layout -->
+            <div class="dashboard-grid">
+                
+                <!-- Input Panel (Left Column) -->
+                <div class="card input-card">
+                    <div class="card-header">
+                        <i data-lucide="file-up"></i>
+                        <h3>Source Inputs</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Step 1: Upload Resume -->
+                        <div class="input-section">
+                            <label class="section-label">1. Upload Candidate Resume (PDF)</label>
+                            <div class="upload-zone" id="upload-zone">
+                                <i data-lucide="file-text" class="upload-icon" id="resume-icon"></i>
+                                <p class="primary-text" id="resume-upload-title">Drag & drop resume PDF</p>
+                                <p class="secondary-text" id="resume-upload-desc">or click to browse local files</p>
+                                <input type="file" id="file-input" accept="application/pdf" class="file-input-hidden">
+                            </div>
+                            
+                            <!-- Parsing Status -->
+                            <div class="file-status hidden" id="file-status-box">
+                                <div class="file-status-info">
+                                    <span class="file-name" id="lbl-file-name">Resume.pdf</span>
+                                    <span class="file-size" id="lbl-file-size">0 KB</span>
+                                </div>
+                                <span class="badge success" id="lbl-file-pages">1 page</span>
+                            </div>
+
+                            <!-- Extracted text preview -->
+                            <details class="text-preview-details" id="text-preview-container" style="display:none;">
+                                <summary>View Extracted Text Preview</summary>
+                                <div class="text-preview-box" id="extracted-text-preview"></div>
+                            </details>
+                        </div>
+
+                        <!-- Step 2: Select Job Description -->
+                        <div class="input-section">
+                            <label class="section-label">2. Target Job Description</label>
+                            
+                            <div class="template-selector-box">
+                                <span class="sub-label">Select Template Role:</span>
+                                <select class="dropdown" id="jd-template-select">
+                                    <option value="machine-learning-engineer">Machine Learning Engineer</option>
+                                    <option value="data-scientist">Data Scientist</option>
+                                    <option value="ai-engineer">AI Engineer</option>
+                                    <option value="backend-developer">Backend Developer</option>
+                                    <option value="custom">Custom (Edit Below)</option>
+                                </select>
+                            </div>
+
+                            <textarea class="textarea-jd" id="textarea-jd" placeholder="Enter Job Description text here..."></textarea>
+                        </div>
+                        
+                        <button class="btn btn-accent btn-full" id="btn-analyze" disabled>
+                            <i data-lucide="fingerprint"></i> Run Semantic Assessment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Summary (Right Column) -->
+                <div class="card stats-card">
+                    <div class="card-header">
+                        <i data-lucide="gauge"></i>
+                        <h3>Matching Telemetry</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Score Display -->
+                        <div class="radial-score-container">
+                            <div class="radial-ring">
+                                <svg class="progress-ring-svg" width="120" height="120">
+                                    <circle class="progress-ring-circle-bg" stroke="rgba(255,255,255,0.03)" stroke-width="8" fill="transparent" r="50" cx="60" cy="60"/>
+                                    <circle class="progress-ring-circle" id="score-ring" stroke="var(--accent)" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                                </svg>
+                                <div class="score-text">
+                                    <span class="score-number" id="lbl-match-score">0%</span>
+                                    <span class="score-lbl">Match</span>
+                                </div>
+                            </div>
+                            <div class="score-meta">
+                                <h4 id="lbl-rec-role">Awaiting Analysis</h4>
+                                <p>Best Career Fit Recommendation</p>
+                            </div>
+                        </div>
+
+                        <!-- Mini stats -->
+                        <div class="stats-mini-grid">
+                            <div class="stat-mini-box">
+                                <span class="stat-mini-val text-green" id="lbl-skills-found-count">0</span>
+                                <span class="stat-mini-lbl">Skills Found</span>
+                            </div>
+                            <div class="stat-mini-box">
+                                <span class="stat-mini-val text-yellow" id="lbl-skills-missing-count">0</span>
+                                <span class="stat-mini-lbl">Skills Missing</span>
+                            </div>
+                        </div>
+
+                        <!-- List of Skills found & missing -->
+                        <div class="skills-comparison-section">
+                            <div class="skills-box">
+                                <span class="skills-title text-green"><i data-lucide="check-circle-2"></i> Found Skills</span>
+                                <div class="skills-tag-container" id="container-skills-found">
+                                    <span class="empty-placeholder">None detected</span>
+                                </div>
+                            </div>
+                            <div class="skills-box">
+                                <span class="skills-title text-yellow"><i data-lucide="alert-circle"></i> Missing Skills</span>
+                                <div class="skills-tag-container" id="container-skills-missing">
+                                    <span class="empty-placeholder">None detected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Career Recommendation Comparison -->
+                <div class="card comparison-card">
+                    <div class="card-header">
+                        <i data-lucide="git-compare"></i>
+                        <h3>Role Match Analysis</h3>
+                    </div>
+                    <div class="card-body role-breakdown-list" id="role-fit-bars">
+                        <!-- Filled dynamically -->
+                        <div class="role-item">
+                            <div class="role-meta">
+                                <span>Machine Learning Engineer</span>
+                                <span class="role-pct">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="role-item">
+                            <div class="role-meta">
+                                <span>Data Scientist</span>
+                                <span class="role-pct">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="role-item">
+                            <div class="role-meta">
+                                <span>AI Engineer</span>
+                                <span class="role-pct">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="role-item">
+                            <div class="role-meta">
+                                <span>Backend Developer</span>
+                                <span class="role-pct">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row Left: Personalized Learning Roadmap -->
+                <div class="card roadmap-card" id="roadmap-section">
+                    <div class="card-header">
+                        <i data-lucide="milestone"></i>
+                        <h3>Personalized Upskilling Roadmap</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="section-desc">Month-by-month actionable study items compiled for missing requirements</p>
+                        <div class="roadmap-timeline" id="roadmap-timeline-container">
+                            <div class="empty-timeline-placeholder">
+                                <i data-lucide="sparkles"></i>
+                                <p>Upskilling timelines will generate dynamically after assessment is complete.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row Right: RAG Q&A Console -->
+                <div class="card qa-card" id="qa-console">
+                    <div class="card-header">
+                        <i data-lucide="message-square"></i>
+                        <h3>Ask Career RAG Assistant</h3>
+                        <div class="vector-count-badge" id="lbl-vector-count">0 Vectors</div>
+                    </div>
+                    <div class="card-body qa-body">
+                        <div class="query-input-box">
+                            <input type="text" class="input-query" id="input-query" placeholder="Ask details (e.g. Does candidate know AWS?)" disabled>
+                            <button class="btn btn-primary" id="btn-query" disabled>
+                                <i data-lucide="search"></i> Query
+                            </button>
+                        </div>
+
+                        <!-- Dynamic Q&A responses log -->
+                        <div class="qa-results-container" id="qa-results-container">
+                            <div class="empty-qa-placeholder">
+                                <i data-lucide="message-square"></i>
+                                <p>Search query matching passages across Resume and JD chunk embeddings.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+    
+    <script type="module" src="app.js"></script>
+    <script>
+        // Set script level Lucide fallback for index-based rendering
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
